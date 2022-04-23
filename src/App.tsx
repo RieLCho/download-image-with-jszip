@@ -6,26 +6,25 @@ interface IDownloadProps {
   fileName?: string;
   url?: string;
   data?: string | Blob;
-  urlInp?: string;
 }
 
-const download = ({ fileName, data, urlInp }: IDownloadProps) => {
+const download = ({ fileName, data, url }: IDownloadProps) => {
   const aTag = document.createElement('a');
-  let url = '';
-  if (urlInp) {
-    url = urlInp;
+  let url_internal = '';
+  if (url) {
+    url_internal = url;
   } else if (data) {
     if (!fileName) return;
     if (typeof data === 'string') {
-      url = URL.createObjectURL(new Blob([data]));
+      url_internal = URL.createObjectURL(new Blob([data]));
     } else {
-      url = URL.createObjectURL(data);
+      url_internal = URL.createObjectURL(data);
     }
   } else return;
-  aTag.setAttribute('href', url);
+  aTag.setAttribute('href', url_internal);
   aTag.setAttribute('download', fileName || '');
   aTag.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(url_internal);
 };
 
 const downloadPng = async ({ fileName, url }: IDownloadProps) => {
@@ -36,6 +35,8 @@ const downloadPng = async ({ fileName, url }: IDownloadProps) => {
     withCredentials: false,
   }).then(({ data }) => {
     download({ fileName: fileName, data });
+  }).catch((err) => {
+    console.log(err);
   });
 };
 
@@ -51,12 +52,11 @@ function App() {
   return (
     <Stack direction="row" spacing={2}>
       <Button variant="contained" onClick={async () => {
-        for (const i in data){
-          await downloadPng({fileName: `test_${i}.jpg`, url: data[i]});
-        }
+        data.forEach(async (v ,i) => {
+          await downloadPng({fileName: `image_${i}.jpg`, url: v});
+        })
       }}>Download Image files</Button>
       <Button variant="contained" onClick={async () => {
-        let urls:string[] = [];
         for (const i in data) {
           await axios({
             url: `${data[i]}`,
@@ -64,9 +64,11 @@ function App() {
             responseType: 'arraybuffer',
             withCredentials: false,
           }).then(async ({ data }) => {
-            const filename = "test" + i + ".jpg";
+            const filename = `image_${i}.jpg`;
             zip.file(filename, data, {binary: true});
-          });
+          }).catch((err) => {
+            console.log(err);
+          })
         }
         zip.generateAsync({type:'blob'}).then((content) => {
           console.log(`${content}`);
