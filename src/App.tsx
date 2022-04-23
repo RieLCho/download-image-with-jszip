@@ -1,7 +1,6 @@
 import {Button, Stack} from '@mui/material'
 import axios from 'axios';
 import JSZip from 'jszip';
-import JsZipUtils from './JsZipUtils';
 
 interface IDownloadProps {
   fileName?: string;
@@ -40,25 +39,14 @@ const downloadPng = async ({ fileName, url }: IDownloadProps) => {
   });
 };
 
-function urlToPromise(url: string): Promise<Blob> {
-  return new Promise(function(resolve, reject) {
-      JsZipUtils.getBinaryContent(url, function (err: any, data: any) {
-          if(err) {
-              reject(err);
-          } else {
-              resolve(data);
-          }
-      });
-  });}
-
 function App() {
   let zip = new JSZip();
   const data:string[] = [
-    'https://picsum.photos/seed/picsum/300',
-    'https://picsum.photos/seed/test/300',
-    'https://picsum.photos/seed/hello/300',
-    'https://picsum.photos/seed/world/300',
-    'https://picsum.photos/seed/bluearchive/300',
+    'https://picsum.photos/seed/picsum/900',
+    'https://picsum.photos/seed/test/900',
+    'https://picsum.photos/seed/hello/900',
+    'https://picsum.photos/seed/world/900',
+    'https://picsum.photos/seed/bluearchive/900',
   ]
   return (
     <Stack direction="row" spacing={2}>
@@ -73,18 +61,13 @@ function App() {
           await axios({
             url: `${data[i]}`,
             method: 'GET',
-            responseType: 'blob',
+            responseType: 'arraybuffer',
             withCredentials: false,
           }).then(async ({ data }) => {
-            const imageUrl = URL.createObjectURL(new Blob([(data)], {type: "image/jpeg"}));
-            urls.push(imageUrl);
+            const filename = "test" + i + ".jpg";
+            zip.file(filename, data, {binary: true});
           });
         }
-        urls.forEach(async (url, index) => {
-          const filename = "test" + index + ".jpg";
-          console.log(`${index}번째: ${url}`);
-          zip.file(filename, urlToPromise(url), {binary: true});
-        });
         zip.generateAsync({type:'blob'}).then((content) => {
           console.log(`${content}`);
           download({fileName:`test_download.zip`, data:content});
